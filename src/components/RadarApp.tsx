@@ -251,8 +251,7 @@ function Header({
     <header className="relative z-20 shrink-0 overflow-hidden rounded-b-[2rem] bg-navy px-5 pb-7 pt-[max(1.25rem,env(safe-area-inset-top))] text-paper sm:px-10">
       <div className="pointer-events-none absolute -right-14 -top-16 h-48 w-48 rounded-full bg-teal-vivid/[0.08]" />
       <div className="pointer-events-none absolute right-28 top-0 h-full w-px rotate-[18deg] bg-paper/[0.08]" />
-      {/* Com logo de cliente, o enquadramento alarga no desktop pra ancorar o conjunto longe da coluna central */}
-      <div className={`relative mx-auto flex h-12 w-full items-center justify-between gap-3 sm:h-[4.5rem] ${client ? "max-w-5xl sm:max-w-7xl" : "max-w-5xl"}`}>
+      <div className="relative mx-auto flex h-12 w-full max-w-7xl items-center justify-between gap-3 sm:h-[4.5rem]">
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-5">
           <BrandLogo priority compact={Boolean(client)} />
           {client && (
