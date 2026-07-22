@@ -3,9 +3,10 @@
 import Image from "next/image";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import logoHorizontal from "../../marca-principal-branco-small (3).png";
-import logoVertical from "../../marca-vertical-branco (2).png";
+import logoHorizontal from "../assets/marca-horizontal-branco.png";
+import logoVertical from "../assets/marca-vertical-branco.png";
 import { IconCheck, IconId, IconLock } from "./icons";
+import type { ClientBrand } from "../clients";
 
 type Step = "splash" | "form" | "loading" | "found" | "not-found";
 type Language = "pt" | "en";
@@ -150,13 +151,21 @@ function isComplete(value: string, kind: DocumentKind) {
   return false;
 }
 
-function BrandLogo({ vertical = false, priority = false }: { vertical?: boolean; priority?: boolean }) {
+function BrandLogo({
+  vertical = false,
+  priority = false,
+  compact = false,
+}: {
+  vertical?: boolean;
+  priority?: boolean;
+  compact?: boolean;
+}) {
   return (
     <Image
       src={vertical ? logoVertical : logoHorizontal}
       alt="BR MED Saúde Corporativa"
       priority={priority}
-      className={vertical ? "h-auto w-[12.5rem]" : "h-auto w-[8.8rem]"}
+      className={vertical ? "h-auto w-[12.5rem]" : compact ? "h-auto w-[7rem]" : "h-auto w-[8.8rem]"}
     />
   );
 }
@@ -167,7 +176,7 @@ function Splash({ onSkip }: { onSkip: () => void }) {
       type="button"
       aria-label="Pular abertura / Skip intro"
       onClick={onSkip}
-      className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-gradient-to-b from-teal to-navy outline-none"
+      className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-b from-teal to-navy outline-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.02 }}
@@ -223,16 +232,26 @@ function LanguageSwitch({ language, onChange }: { language: Language; onChange: 
 function Header({
   language,
   onLanguageChange,
+  client,
 }: {
   language: Language;
   onLanguageChange: (language: Language) => void;
+  client?: ClientBrand;
 }) {
   return (
     <header className="relative z-20 shrink-0 overflow-hidden rounded-b-[2rem] bg-navy px-5 pb-7 pt-[max(1.25rem,env(safe-area-inset-top))] text-paper">
       <div className="pointer-events-none absolute -right-14 -top-16 h-48 w-48 rounded-full bg-teal-vivid/[0.08]" />
       <div className="pointer-events-none absolute right-28 top-0 h-full w-px rotate-[18deg] bg-paper/[0.08]" />
-      <div className="relative flex h-12 items-center justify-between">
-        <BrandLogo priority />
+      <div className="relative flex h-12 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <BrandLogo priority compact={Boolean(client)} />
+          {client && (
+            <>
+              <span aria-hidden className="h-7 w-px shrink-0 bg-paper/25" />
+              <Image src={client.logo} alt={client.name} priority className="h-auto max-h-6 w-auto min-w-0 max-w-[6rem] shrink object-contain" />
+            </>
+          )}
+        </div>
         <LanguageSwitch language={language} onChange={onLanguageChange} />
       </div>
     </header>
@@ -582,12 +601,12 @@ function ResultScreen({
 
   return (
     <motion.main
-      className="flex flex-1 flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
     >
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-7 text-center">
+      <div className="mx-auto my-auto flex w-full max-w-sm shrink-0 flex-col justify-center px-5 py-7 text-center">
         <motion.div
           className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-[1.75rem] ${found ? "bg-teal/10 text-teal" : "bg-amber/10 text-amber"}`}
           initial={{ scale: 0.45, opacity: 0, rotate: -8 }}
@@ -617,35 +636,37 @@ function ResultScreen({
         </motion.div>
       </div>
 
-      {found ? (
-        <motion.a
-          href={questionnaireUrl}
-          className="flex h-14 w-full items-center justify-center rounded-2xl bg-navy font-display text-base font-medium text-paper shadow-lg shadow-navy/20 transition-colors active:bg-teal"
-          whileTap={{ scale: 0.98 }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          {t.questionnaire}
-        </motion.a>
-      ) : (
-        <motion.button
-          type="button"
-          onClick={onRestart}
-          className="h-14 w-full rounded-2xl border border-gray-3 bg-paper font-display text-base font-medium text-navy active:bg-gray-4"
-          whileTap={{ scale: 0.98 }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          {t.retry}
-        </motion.button>
-      )}
+      <div className="sticky bottom-0 shrink-0 bg-gradient-to-t from-background via-background to-transparent px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        {found ? (
+          <motion.a
+            href={questionnaireUrl}
+            className="flex h-14 w-full items-center justify-center rounded-2xl bg-navy font-display text-base font-medium text-paper shadow-lg shadow-navy/20 transition-colors active:bg-teal"
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            {t.questionnaire}
+          </motion.a>
+        ) : (
+          <motion.button
+            type="button"
+            onClick={onRestart}
+            className="h-14 w-full rounded-2xl border border-gray-3 bg-paper font-display text-base font-medium text-navy active:bg-gray-4"
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            {t.retry}
+          </motion.button>
+        )}
+      </div>
     </motion.main>
   );
 }
 
-export function RadarApp() {
+export function RadarApp({ client }: { client?: ClientBrand } = {}) {
   const [step, setStep] = useState<Step>("splash");
   const [language, setLanguage] = useState<Language>("pt");
   const [documentValue, setDocumentValue] = useState("");
@@ -677,13 +698,13 @@ export function RadarApp() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-dvh bg-background sm:flex sm:items-center sm:justify-center sm:bg-[#e5e9e9] sm:p-5">
-        <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-background sm:h-[min(860px,calc(100dvh-2.5rem))] sm:min-h-0 sm:rounded-[2.25rem] sm:shadow-2xl sm:shadow-navy/15 sm:ring-1 sm:ring-navy/5">
+        <div className="relative mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-background sm:h-[min(860px,calc(100dvh-2.5rem))] sm:rounded-[2.25rem] sm:shadow-2xl sm:shadow-navy/15 sm:ring-1 sm:ring-navy/5">
           <AnimatePresence mode="wait">
             {step === "splash" ? (
               <Splash key="splash" onSkip={() => setStep("form")} />
             ) : (
               <motion.div key="app" className="flex min-h-0 flex-1 flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <Header language={language} onLanguageChange={setLanguage} />
+                <Header language={language} onLanguageChange={setLanguage} client={client} />
                 <AnimatePresence mode="wait">
                   {step === "form" && (
                     <DocumentForm
