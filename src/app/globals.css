@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+:root {
+  /* institucionais */
+  --navy: #193b4f; /* cor principal. Títulos, texto forte, fundos de capa */
+  --teal: #007891; /* cor de apoio. Kickers, destaques, links, fase atual */
+
+  /* cuidado */
+  --blue-soft: #7ebfcc;
+  --blue-lighter: #9bd5e1;
+
+  /* humanização */
+  --teal-vivid: #00afaa; /* círculos decorativos, acentos pontuais */
+  --green: #2cad6e;
+  --green-soft: #aad1b4;
+
+  /* sofisticação — níveis de urgência/alerta */
+  --rust: #a05e1e; /* crítico */
+  --amber: #cc851e; /* prioridade / atenção média */
+  --gold: #d9be53;
+
+  /* neutros */
+  --gray-1: #767a7b; /* texto secundário, anotações */
+  --gray-2: #bfc3c6; /* elementos desabilitados, numeração de página */
+  --gray-3: #dfe0e2; /* linhas divisórias (1px) */
+  --gray-4: #f3f3f3; /* fundos suaves, trilhos de gráfico, caixas de destaque */
+  --paper: #ffffff;
+
+  /* semântica da aplicação */
+  --background: var(--gray-4);
+  --foreground: var(--navy);
+}
+
+@theme inline {
+  --font-sans: var(--font-roboto), Roboto, sans-serif;
+  --font-display: var(--font-work-sans), "Work Sans", sans-serif;
+
+  --color-navy: var(--navy);
+  --color-teal: var(--teal);
+  --color-blue-soft: var(--blue-soft);
+  --color-blue-lighter: var(--blue-lighter);
+  --color-teal-vivid: var(--teal-vivid);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-rust: var(--rust);
+  --color-amber: var(--amber);
+  --color-gold: var(--gold);
+  --color-gray-1: var(--gray-1);
+  --color-gray-2: var(--gray-2);
+  --color-gray-3: var(--gray-3);
+  --color-gray-4: var(--gray-4);
+  --color-paper: var(--paper);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+@layer base {
+  html {
+    font-size: 16px;
+  }
+
+  /*
+   * Comportamento de app: o documento nunca rola — cada tela rola
+   * internamente quando precisa. Sem rubber-band nem barra de endereço
+   * colapsando no meio da interação.
+   */
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-roboto), Roboto, sans-serif;
+    font-weight: 300;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button,
+  input {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * Diretriz do brandguide: títulos, números grandes e rótulos em Work Sans,
+   * pesos entre light (300) e semibold (600) — nunca 700+.
+   * Corpo de texto em Roboto 300, com 400/500 para ênfase.
+   */
+
+  h1,
+  h2,
+  h3,
+  h4,
+  label,
+  button {
+    font-family: var(--font-work-sans), "Work Sans", sans-serif;
+    line-height: 1.35;
+  }
+
+  h1 {
+    font-weight: 600;
+  }
+
+  h2,
+  h3,
+  h4,
+  label,
+  button {
+    font-weight: 500;
+  }
+
+  strong,
+  b {
+    font-weight: 500;
+  }
+
+  input {
+    font-family: var(--font-roboto), Roboto, sans-serif;
+    font-weight: 400;
+    font-size: 1rem; /* evita zoom automático do iOS em foco */
+  }
+
+  /*
+   * iOS/Safari dá ao input de data uma largura intrínseca própria que ignora
+   * o w-full e estoura o layout na horizontal; também centraliza o valor e
+   * colapsa a altura quando vazio.
+   */
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    min-height: 3.5rem; /* mesma altura dos demais campos */
+    text-align: left;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .kicker {
+    font-family: var(--font-work-sans), "Work Sans", sans-serif;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .brand-glow {
+    background: radial-gradient(ellipse, rgb(0 175 170 / 0.18) 0%, rgb(0 120 145 / 0.07) 42%, transparent 72%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}

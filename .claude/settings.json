@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Applications/Google Chrome.app/Contents/MacOS/**)",
+      "Read(//Users/rdsgabriel/Library/Caches/**)",
+      "Bash(ls /Applications/ | head -30; echo ---; ls ~/Applications 2>/dev/null)",
+      "Read(//Applications/**)",
+      "Read(//Users/rdsgabriel/Applications/**)",
+      "Bash(npm init *)",
+      "Bash(npm i *)",
+      "Bash(npx playwright *)",
+      "Bash(node drive.mjs)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}
