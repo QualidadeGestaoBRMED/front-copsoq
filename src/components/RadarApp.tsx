@@ -160,27 +160,13 @@ function isComplete(value: string, kind: DocumentKind) {
   return false;
 }
 
-function BrandLogo({
-  vertical = false,
-  priority = false,
-  compact = false,
-}: {
-  vertical?: boolean;
-  priority?: boolean;
-  compact?: boolean;
-}) {
+function BrandLogo({ vertical = false, priority = false }: { vertical?: boolean; priority?: boolean }) {
   return (
     <Image
       src={vertical ? logoVertical : logoHorizontal}
       alt="BR MED Saúde Corporativa"
       priority={priority}
-      className={
-        vertical
-          ? "h-auto w-[12.5rem]"
-          : compact
-            ? "h-auto w-[7rem] sm:w-[11rem]"
-            : "h-auto w-[8.8rem] sm:w-[13rem]"
-      }
+      className={vertical ? "h-auto w-[12.5rem]" : "h-auto w-[7rem] sm:w-[11rem]"}
     />
   );
 }
@@ -253,7 +239,7 @@ function Header({
       <div className="pointer-events-none absolute right-28 top-0 h-full w-px rotate-[18deg] bg-paper/[0.08]" />
       <div className="relative mx-auto flex h-12 w-full max-w-7xl items-center justify-between gap-3 sm:h-[4.5rem]">
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-5">
-          <BrandLogo priority compact={Boolean(client)} />
+          <BrandLogo priority />
           {client && (
             <>
               <span aria-hidden className="h-7 w-px shrink-0 bg-paper/25 sm:h-9" />
