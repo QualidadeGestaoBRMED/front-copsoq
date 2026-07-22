@@ -19,7 +19,7 @@ const FOUND_DOCUMENTS = new Set(["14323631740", "AB123456"]);
 const copy = {
   pt: {
     assessment: "Avaliação Psicossocial",
-    title: "Pré-check da avaliação",
+    title: "Verificação prévia\nda avaliação",
     intro: "Informe seu CPF ou passaporte para verificarmos seu cadastro antes do questionário.",
     currentStep: "Etapa atual",
     identification: "Identificação",
@@ -34,7 +34,7 @@ const copy = {
     invalidPassport: "Digite um passaporte válido com 6 a 12 caracteres.",
     verify: "Verificar documento",
     privacy: "Seus dados são protegidos e usados somente para esta consulta.",
-    inProgress: "Pré-check em andamento",
+    inProgress: "Verificação em andamento",
     checking: "Validando seu documento",
     checkingDescription: (type: string, value: string) =>
       `Estamos verificando se o ${type} ${value} está presente em nossa base.`,
@@ -46,14 +46,14 @@ const copy = {
       "Confirmando o status do cadastro",
     ],
     cancel: "Cancelar consulta",
-    foundKicker: "Pré-check concluído",
+    foundKicker: "Verificação concluída",
     foundTitle: "Cadastro localizado",
     foundDescription: "Seu documento está presente em nossa base. Você já pode responder ao questionário.",
     notFoundKicker: "Consulta concluída",
     notFoundTitle: "Cadastro não localizado",
     notFoundDescription: "Não encontramos este documento em nossa base neste momento.",
     consulted: "Documento consultado",
-    notFoundHelp: "Confira se os dados foram digitados corretamente ou tente novamente mais tarde.",
+    notFoundHelp: "Confira se os dados foram digitados corretamente.",
     questionnaire: "Responder questionário",
     retry: "Tentar outro documento",
   },
@@ -122,6 +122,15 @@ function formatCpf(value: string) {
 function formatDocument(value: string) {
   const normalized = normalizeDocument(value);
   return /[A-Z]/.test(normalized) ? normalized : formatCpf(normalized);
+}
+
+/** Nunca expor o documento completo fora do campo de digitação (LGPD). */
+function maskDocument(value: string) {
+  const normalized = normalizeDocument(value);
+  if (!/[A-Z]/.test(normalized)) {
+    return `***.${normalized.slice(3, 6)}.${normalized.slice(6, 9)}-**`;
+  }
+  return `${normalized.slice(0, 2)}${"*".repeat(Math.max(normalized.length - 4, 0))}${normalized.slice(-2)}`;
 }
 
 function isValidCpf(value: string) {
@@ -367,7 +376,7 @@ function DocumentForm({
       transition={{ duration: 0.42, ease: "easeOut" }}
     >
       <JourneyProgress language={language} />
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col pt-24">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col pt-26">
         <div className="mb-8">
           <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-teal/8 px-3 py-1.5 text-xs font-medium text-teal">
             <span className="h-2 w-2 rounded-sm bg-teal" />
@@ -381,7 +390,7 @@ function DocumentForm({
               exit={{ opacity: 0, x: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <h1 className="max-w-[17ch] font-display text-[2rem] font-semibold leading-[1.12] tracking-[-0.025em] text-navy">
+              <h1 className="max-w-[17ch] whitespace-pre-line font-display text-[2rem] font-semibold leading-[1.12] tracking-[-0.025em] text-navy">
                 {t.title}
               </h1>
               <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-gray-1">{t.intro}</p>
@@ -549,7 +558,7 @@ function AnalysisScreen({
         <p className="kicker mb-3 text-teal">{t.inProgress}</p>
         <h1 className="max-w-[18ch] font-display text-[1.75rem] font-semibold leading-tight text-navy">{t.checking}</h1>
         <p className="mt-3 max-w-[31ch] text-[15px] leading-relaxed text-gray-1" aria-live="polite">
-          {t.checkingDescription(kind === "passport" ? t.passportShort : t.cpfShort, documentValue)}
+          {t.checkingDescription(kind === "passport" ? t.passportShort : t.cpfShort, maskDocument(documentValue))}
         </p>
 
         <div className="mt-8 w-full max-w-xs space-y-2.5 text-left">
@@ -629,7 +638,7 @@ function ResultScreen({
             </span>
             <div>
               <p className="text-xs text-gray-1">{t.consulted}</p>
-              <p className="mt-0.5 font-display text-sm font-medium tracking-wide text-navy">{documentValue}</p>
+              <p className="mt-0.5 font-display text-sm font-medium tracking-wide text-navy">{maskDocument(documentValue)}</p>
             </div>
           </div>
           {!found && <p className="mt-4 border-t border-gray-3 pt-4 text-sm leading-relaxed text-gray-1">{t.notFoundHelp}</p>}
