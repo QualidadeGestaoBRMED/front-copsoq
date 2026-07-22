@@ -520,46 +520,48 @@ function AnalysisScreen({
 
   return (
     <motion.main
-      className="flex flex-1 flex-col items-center justify-center overflow-hidden px-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-center"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-[max(2rem,env(safe-area-inset-bottom))] text-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <DocumentScan kind={kind} />
-      <p className="kicker mb-3 text-teal">{t.inProgress}</p>
-      <h1 className="max-w-[18ch] font-display text-[1.75rem] font-semibold leading-tight text-navy">{t.checking}</h1>
-      <p className="mt-3 max-w-[31ch] text-[15px] leading-relaxed text-gray-1" aria-live="polite">
-        {t.checkingDescription(kind === "passport" ? t.passportShort : t.cpfShort, documentValue)}
-      </p>
+      <div className="my-auto flex w-full shrink-0 flex-col items-center pt-8">
+        <DocumentScan kind={kind} />
+        <p className="kicker mb-3 text-teal">{t.inProgress}</p>
+        <h1 className="max-w-[18ch] font-display text-[1.75rem] font-semibold leading-tight text-navy">{t.checking}</h1>
+        <p className="mt-3 max-w-[31ch] text-[15px] leading-relaxed text-gray-1" aria-live="polite">
+          {t.checkingDescription(kind === "passport" ? t.passportShort : t.cpfShort, documentValue)}
+        </p>
 
-      <div className="mt-8 w-full max-w-xs space-y-2.5 text-left">
-        {t.steps.map((label, index) => {
-          const complete = index < activeStep;
-          const active = index === activeStep;
-          return (
-            <motion.div
-              key={label}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${active ? "bg-paper shadow-sm" : ""}`}
-              animate={{ opacity: index <= activeStep ? 1 : 0.42 }}
-            >
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors ${complete ? "border-teal bg-teal text-paper" : active ? "border-teal text-teal" : "border-gray-3 text-gray-2"}`}>
-                {complete ? (
-                  <IconCheck className="h-3.5 w-3.5" strokeWidth={2.5} />
-                ) : active ? (
-                  <motion.span className="h-1.5 w-1.5 rounded-sm bg-current" animate={{ scale: [0.6, 1.2, 0.6], opacity: [0.5, 1, 0.5] }} transition={{ duration: 0.9, repeat: Infinity }} />
-                ) : (
-                  index + 1
-                )}
-              </span>
-              <span className={`text-sm ${active ? "font-normal text-navy" : "text-gray-1"}`}>{label}</span>
-            </motion.div>
-          );
-        })}
+        <div className="mt-8 w-full max-w-xs space-y-2.5 text-left">
+          {t.steps.map((label, index) => {
+            const complete = index < activeStep;
+            const active = index === activeStep;
+            return (
+              <motion.div
+                key={label}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${active ? "bg-paper shadow-sm" : ""}`}
+                animate={{ opacity: index <= activeStep ? 1 : 0.42 }}
+              >
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors ${complete ? "border-teal bg-teal text-paper" : active ? "border-teal text-teal" : "border-gray-3 text-gray-2"}`}>
+                  {complete ? (
+                    <IconCheck className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  ) : active ? (
+                    <motion.span className="h-1.5 w-1.5 rounded-sm bg-current" animate={{ scale: [0.6, 1.2, 0.6], opacity: [0.5, 1, 0.5] }} transition={{ duration: 0.9, repeat: Infinity }} />
+                  ) : (
+                    index + 1
+                  )}
+                </span>
+                <span className={`text-sm ${active ? "font-normal text-navy" : "text-gray-1"}`}>{label}</span>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <button type="button" onClick={onBack} className="mt-7 text-sm font-medium text-gray-1 underline decoration-gray-2 underline-offset-4">
+          {t.cancel}
+        </button>
       </div>
-
-      <button type="button" onClick={onBack} className="mt-7 text-sm font-medium text-gray-1 underline decoration-gray-2 underline-offset-4">
-        {t.cancel}
-      </button>
     </motion.main>
   );
 }
