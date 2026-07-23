@@ -20,15 +20,41 @@ declare global {
 
 export function QuestionnairePage({ client }: { client?: ClientBrand } = {}) {
   const mainRef = useRef<HTMLElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // O documento não rola (app-shell) — quem rola é o <main>. O Tally não
-  // alcança esse scroll ao trocar de página, então subimos nós mesmos
-  // quando o embed avisa a mudança via postMessage.
+  // O documento não rola (app-shell) — quem rola é o <main>. O embed.js do
+  // Tally rola a janela (no-op aqui), então tratamos nós mesmos os eventos
+  // que ele manda via postMessage: troca de página → topo; pergunta
+  // obrigatória sem resposta → rola até ela (mesmo cálculo do embed.js,
+  // trocando window pelo <main>).
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      if (event.origin !== "https://tally.so") return;
-      if (typeof event.data !== "string" || !event.data.includes("Tally.FormPageView")) return;
-      mainRef.current?.scrollTo({ top: 0 });
+      if (event.origin !== "https://tally.so" || typeof event.data !== "string") return;
+      const main = mainRef.current;
+      if (!main) return;
+
+      if (event.data.includes("Tally.FormPageView")) {
+        main.scrollTo({ top: 0 });
+        return;
+      }
+
+      if (event.data.includes("Tally.FormHighlightFirstError")) {
+        let offset = 0;
+        try {
+          offset = JSON.parse(event.data)?.payload?.offset ?? 0;
+        } catch {
+          return;
+        }
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+        const top =
+          iframe.getBoundingClientRect().top -
+          main.getBoundingClientRect().top +
+          main.scrollTop +
+          offset -
+          main.clientHeight * 0.05;
+        main.scrollTo({ top, behavior: "smooth" });
+      }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -40,6 +66,7 @@ export function QuestionnairePage({ client }: { client?: ClientBrand } = {}) {
       <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-10">
         <div className="mx-auto w-full max-w-2xl pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:max-w-none">
           <iframe
+            ref={iframeRef}
             data-tally-src={TALLY_EMBED_URL}
             loading="lazy"
             width="100%"
