@@ -23,15 +23,13 @@ export function QuestionnairePage({ client }: { client?: ClientBrand } = {}) {
       <Header client={client} />
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-10">
         <div className="mx-auto w-full max-w-2xl pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-8 sm:max-w-none sm:pt-12">
-          <p className="kicker text-center text-teal">Avaliação Psicossocial</p>
-          <h1 className="mt-2 text-center font-display text-[1.6rem] font-semibold leading-tight text-navy">Questionário</h1>
           <iframe
             data-tally-src={TALLY_EMBED_URL}
             loading="lazy"
             width="100%"
             height={1238}
             title="Questionário — Avaliação Psicossocial"
-            className="mt-6 w-full border-0"
+            className="w-full border-0"
           />
         </div>
       </main>
