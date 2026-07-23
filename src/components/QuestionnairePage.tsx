@@ -22,7 +22,7 @@ export function QuestionnairePage({ client }: { client?: ClientBrand } = {}) {
     <div className="relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-background">
       <Header client={client} />
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-10">
-        <div className="mx-auto w-full max-w-2xl pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-8 sm:max-w-none sm:pt-12">
+        <div className="mx-auto w-full max-w-2xl pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:max-w-none">
           <iframe
             data-tally-src={TALLY_EMBED_URL}
             loading="lazy"
