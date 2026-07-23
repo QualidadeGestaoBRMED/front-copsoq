@@ -22,7 +22,7 @@ export function QuestionnairePage({ client }: { client?: ClientBrand } = {}) {
     <div className="relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-background">
       <Header client={client} />
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto w-full max-w-2xl px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-8 sm:max-w-4xl sm:px-10 sm:pt-12">
+        <div className="mx-auto w-full max-w-2xl px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-8 sm:max-w-5xl sm:px-10 sm:pt-12">
           <p className="kicker text-teal">Avaliação Psicossocial</p>
           <h1 className="mt-2 font-display text-[1.6rem] font-semibold leading-tight text-navy">Questionário</h1>
           <iframe
