@@ -224,13 +224,13 @@ function LanguageSwitch({ language, onChange }: { language: Language; onChange: 
   );
 }
 
-function Header({
-  language,
+export function Header({
+  language = "pt",
   onLanguageChange,
   client,
 }: {
-  language: Language;
-  onLanguageChange: (language: Language) => void;
+  language?: Language;
+  onLanguageChange?: (language: Language) => void;
   client?: ClientBrand;
 }) {
   return (
@@ -247,7 +247,7 @@ function Header({
             </>
           )}
         </div>
-        <LanguageSwitch language={language} onChange={onLanguageChange} />
+        {onLanguageChange && <LanguageSwitch language={language} onChange={onLanguageChange} />}
       </div>
     </header>
   );
@@ -594,15 +594,16 @@ function ResultScreen({
   found,
   documentValue,
   language,
+  questionnaireHref,
   onRestart,
 }: {
   found: boolean;
   documentValue: string;
   language: Language;
+  questionnaireHref: string;
   onRestart: () => void;
 }) {
   const t = copy[language];
-  const questionnaireUrl = process.env.NEXT_PUBLIC_QUESTIONNAIRE_URL || "#questionario";
 
   return (
     <motion.main
@@ -644,7 +645,7 @@ function ResultScreen({
       <div className="sticky bottom-0 shrink-0 bg-gradient-to-t from-background via-background to-transparent px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:flex sm:justify-center">
         {found ? (
           <motion.a
-            href={questionnaireUrl}
+            href={questionnaireHref}
             className="flex h-14 w-full items-center justify-center rounded-2xl bg-navy font-display text-base font-medium text-paper shadow-lg shadow-navy/20 transition-colors active:bg-teal sm:max-w-md"
             whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0, y: 10 }}
@@ -700,6 +701,8 @@ export function RadarApp({ client }: { client?: ClientBrand } = {}) {
     setStep("form");
   };
 
+  const questionnaireHref = client ? `/${client.slug}/questionario` : "/questionario";
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative min-h-dvh bg-background">
@@ -724,10 +727,10 @@ export function RadarApp({ client }: { client?: ClientBrand } = {}) {
                     <AnalysisScreen key="loading" documentValue={documentValue} language={language} onBack={() => setStep("form")} />
                   )}
                   {step === "found" && (
-                    <ResultScreen key="found" found documentValue={documentValue} language={language} onRestart={restart} />
+                    <ResultScreen key="found" found documentValue={documentValue} language={language} questionnaireHref={questionnaireHref} onRestart={restart} />
                   )}
                   {step === "not-found" && (
-                    <ResultScreen key="not-found" found={false} documentValue={documentValue} language={language} onRestart={restart} />
+                    <ResultScreen key="not-found" found={false} documentValue={documentValue} language={language} questionnaireHref={questionnaireHref} onRestart={restart} />
                   )}
                 </AnimatePresence>
               </motion.div>

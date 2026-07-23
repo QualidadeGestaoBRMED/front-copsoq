@@ -9,12 +9,13 @@ import subsea7 from "./assets/clientes/subsea7.png";
  */
 
 export type ClientBrand = {
+  slug: string;
   name: string;
   logo: StaticImageData;
 };
 
 const CLIENTS = {
-  subsea7: { name: "Subsea7", logo: subsea7 },
+  subsea7: { slug: "subsea7", name: "Subsea7", logo: subsea7 },
 } satisfies Record<string, ClientBrand>;
 
 export const clientSlugs = Object.keys(CLIENTS);
