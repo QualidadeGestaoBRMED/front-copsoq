@@ -1,20 +1,22 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import logoHorizontal from "../assets/marca-horizontal-branco.png";
 import logoVertical from "../assets/marca-vertical-branco.png";
 import { IconCheck, IconId, IconLock } from "./icons";
 import type { ClientBrand } from "../clients";
+import { FORM_URL_STORAGE_KEY, GateError, obterFormulario, validarIdentidade, type GateErrorKind } from "../lib/gate";
 
-type Step = "splash" | "form" | "loading" | "found" | "not-found";
+type Step = "splash" | "form" | "loading" | "found" | "not-found" | "error";
 type Language = "pt" | "en";
 type DocumentKind = "cpf" | "passport" | "unknown";
 
 const SPLASH_DURATION = 2200;
+/** Duração mínima da tela de análise — a consulta real corre em paralelo. */
 const RESULT_DELAY = 4100;
-const FOUND_DOCUMENTS = new Set(["14323631740", "AB123456"]);
 
 const copy = {
   pt: {
@@ -56,6 +58,13 @@ const copy = {
     notFoundHelp: "Confira se os dados foram digitados corretamente.",
     questionnaire: "Responder questionário",
     retry: "Tentar outro documento",
+    errorKicker: "Consulta interrompida",
+    errorTitle: "Não foi possível verificar",
+    errorRateLimit: "Muitas tentativas em pouco tempo. Aguarde um minuto e tente novamente.",
+    errorNetwork: "Não conseguimos concluir a consulta agora. Verifique sua conexão e tente novamente.",
+    tryAgain: "Tentar novamente",
+    sessionExpired: "Sessão inválida ou expirada. Valide o documento novamente.",
+    openingForm: "Abrindo questionário…",
   },
   en: {
     assessment: "Psychosocial Assessment",
@@ -96,6 +105,13 @@ const copy = {
     notFoundHelp: "Check that the details were entered correctly or try again later.",
     questionnaire: "Answer questionnaire",
     retry: "Try another document",
+    errorKicker: "Verification interrupted",
+    errorTitle: "Verification unavailable",
+    errorRateLimit: "Too many attempts in a short time. Wait a minute and try again.",
+    errorNetwork: "We could not complete the verification right now. Check your connection and try again.",
+    tryAgain: "Try again",
+    sessionExpired: "Session invalid or expired. Verify your document again.",
+    openingForm: "Opening questionnaire…",
   },
 } as const;
 
@@ -322,11 +338,14 @@ function JourneyProgress({ language }: { language: Language }) {
 function DocumentForm({
   documentValue,
   language,
+  notice,
   onDocumentChange,
   onSubmit,
 }: {
   documentValue: string;
   language: Language;
+  /** Aviso vindo do fluxo (ex.: sessão expirada ao abrir o questionário). */
+  notice?: string;
   onDocumentChange: (value: string) => void;
   onSubmit: () => void;
 }) {
@@ -391,6 +410,17 @@ function DocumentForm({
             </motion.div>
           </AnimatePresence>
         </div>
+
+        {notice && (
+          <motion.p
+            role="alert"
+            className="mb-5 rounded-xl border border-amber/25 bg-amber/8 px-4 py-3 text-sm leading-relaxed text-amber"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {notice}
+          </motion.p>
+        )}
 
         <form onSubmit={submit} noValidate>
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -591,19 +621,30 @@ function AnalysisScreen({
 }
 
 function ResultScreen({
-  found,
+  variant,
   documentValue,
   language,
-  questionnaireHref,
+  description,
+  opening = false,
+  ctaError,
+  onOpenQuestionnaire,
   onRestart,
 }: {
-  found: boolean;
+  variant: "found" | "not-found" | "error";
   documentValue: string;
   language: Language;
-  questionnaireHref: string;
+  /** Sobrescreve a descrição padrão (ex.: mensagem vinda da API). */
+  description?: string;
+  opening?: boolean;
+  ctaError?: string;
+  onOpenQuestionnaire: () => void;
   onRestart: () => void;
 }) {
   const t = copy[language];
+  const found = variant === "found";
+  const kicker = found ? t.foundKicker : variant === "not-found" ? t.notFoundKicker : t.errorKicker;
+  const title = found ? t.foundTitle : variant === "not-found" ? t.notFoundTitle : t.errorTitle;
+  const body = description ?? (found ? t.foundDescription : t.notFoundDescription);
 
   return (
     <motion.main
@@ -619,13 +660,17 @@ function ResultScreen({
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 280, damping: 20, delay: 0.12 }}
         >
-          {found ? <IconCheck className="h-11 w-11" strokeWidth={1.8} /> : <span className="font-display text-[2.5rem] font-light">?</span>}
+          {found ? (
+            <IconCheck className="h-11 w-11" strokeWidth={1.8} />
+          ) : (
+            <span className="font-display text-[2.5rem] font-light">{variant === "error" ? "!" : "?"}</span>
+          )}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
-          <p className={`kicker mb-2 ${found ? "text-teal" : "text-amber"}`}>{found ? t.foundKicker : t.notFoundKicker}</p>
-          <h1 className="mx-auto max-w-[18ch] font-display text-[1.8rem] font-semibold leading-tight text-navy sm:max-w-none">{found ? t.foundTitle : t.notFoundTitle}</h1>
-          <p className="mx-auto mt-3 max-w-[31ch] text-[15px] leading-relaxed text-gray-1 sm:max-w-[46ch]">{found ? t.foundDescription : t.notFoundDescription}</p>
+          <p className={`kicker mb-2 ${found ? "text-teal" : "text-amber"}`}>{kicker}</p>
+          <h1 className="mx-auto max-w-[18ch] font-display text-[1.8rem] font-semibold leading-tight text-navy sm:max-w-none">{title}</h1>
+          <p className="mx-auto mt-3 max-w-[31ch] text-[15px] leading-relaxed text-gray-1 sm:max-w-[46ch]">{body}</p>
         </motion.div>
 
         <motion.div className="mt-8 rounded-2xl bg-paper p-5 text-left shadow-sm ring-1 ring-navy/[0.04]" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52, duration: 0.4 }}>
@@ -638,44 +683,62 @@ function ResultScreen({
               <p className="mt-0.5 font-display text-sm font-medium tracking-wide text-navy">{maskDocument(documentValue)}</p>
             </div>
           </div>
-          {!found && <p className="mt-4 border-t border-gray-3 pt-4 text-sm leading-relaxed text-gray-1">{t.notFoundHelp}</p>}
+          {variant === "not-found" && <p className="mt-4 border-t border-gray-3 pt-4 text-sm leading-relaxed text-gray-1">{t.notFoundHelp}</p>}
         </motion.div>
       </div>
 
-      <div className="sticky bottom-0 shrink-0 bg-gradient-to-t from-background via-background to-transparent px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:flex sm:justify-center">
-        {found ? (
-          <motion.a
-            href={questionnaireHref}
-            className="flex h-14 w-full items-center justify-center rounded-2xl bg-navy font-display text-base font-medium text-paper shadow-lg shadow-navy/20 transition-colors active:bg-teal sm:max-w-md"
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-          >
-            {t.questionnaire}
-          </motion.a>
-        ) : (
-          <motion.button
-            type="button"
-            onClick={onRestart}
-            className="h-14 w-full rounded-2xl border border-gray-3 bg-paper font-display text-base font-medium text-navy active:bg-gray-4 sm:max-w-md"
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-          >
-            {t.retry}
-          </motion.button>
+      <div className="sticky bottom-0 shrink-0 bg-gradient-to-t from-background via-background to-transparent px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        {ctaError && (
+          <p role="alert" className="mx-auto mb-3 max-w-md text-center text-sm text-rust">
+            {ctaError}
+          </p>
         )}
+        <div className="sm:flex sm:justify-center">
+          {found ? (
+            <motion.button
+              type="button"
+              onClick={onOpenQuestionnaire}
+              disabled={opening}
+              className="flex h-14 w-full items-center justify-center rounded-2xl bg-navy font-display text-base font-medium text-paper shadow-lg shadow-navy/20 transition-colors active:bg-teal disabled:cursor-wait disabled:opacity-70 sm:max-w-md"
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              {opening ? t.openingForm : t.questionnaire}
+            </motion.button>
+          ) : (
+            <motion.button
+              type="button"
+              onClick={onRestart}
+              className="h-14 w-full rounded-2xl border border-gray-3 bg-paper font-display text-base font-medium text-navy active:bg-gray-4 sm:max-w-md"
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              {variant === "error" ? t.tryAgain : t.retry}
+            </motion.button>
+          )}
+        </div>
       </div>
     </motion.main>
   );
 }
 
 export function RadarApp({ client }: { client?: ClientBrand } = {}) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("splash");
   const [language, setLanguage] = useState<Language>("pt");
   const [documentValue, setDocumentValue] = useState("");
+  // Mensagem de inelegível vinda da API (sempre a mesma, por design anti-enumeração).
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<GateErrorKind | null>(null);
+  const [formNotice, setFormNotice] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [ctaErrorKind, setCtaErrorKind] = useState<GateErrorKind | null>(null);
+  // Token de sessão só em memória (contrato: nunca em localStorage/cookie).
+  const sessaoRef = useRef<string | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = language === "pt" ? "pt-BR" : "en";
@@ -689,19 +752,75 @@ export function RadarApp({ client }: { client?: ClientBrand } = {}) {
 
   useEffect(() => {
     if (step !== "loading") return;
-    const timer = window.setTimeout(() => {
-      setStep(FOUND_DOCUMENTS.has(normalizeDocument(documentValue)) ? "found" : "not-found");
+    let cancelled = false;
+
+    (async () => {
+      const started = Date.now();
+      let outcome: () => void;
+      try {
+        // Texto puro normalizado só do formato visual (pontos/traços da máscara);
+        // quem decide CPF × passaporte é o servidor.
+        const result = await validarIdentidade(normalizeDocument(documentValue));
+        if (result.elegivel && result.sessao) {
+          sessaoRef.current = result.sessao;
+          outcome = () => setStep("found");
+        } else {
+          outcome = () => {
+            setApiMessage(result.mensagem);
+            setStep("not-found");
+          };
+        }
+      } catch (error) {
+        const kind = error instanceof GateError ? error.kind : "network";
+        outcome = () => {
+          setErrorKind(kind === "invalid-session" ? "network" : kind);
+          setStep("error");
+        };
+      }
+
+      // Segura o resultado até a animação de análise completar seu ciclo.
+      const remaining = RESULT_DELAY - (Date.now() - started);
+      if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+      if (cancelled) return;
+      outcome();
       navigator.vibrate?.([18, 45, 18]);
-    }, RESULT_DELAY);
-    return () => window.clearTimeout(timer);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [step, documentValue]);
 
   const restart = () => {
     setDocumentValue("");
+    setApiMessage(null);
+    setErrorKind(null);
+    setCtaErrorKind(null);
+    sessaoRef.current = null;
     setStep("form");
   };
 
-  const questionnaireHref = client ? `/${client.slug}/questionario` : "/questionario";
+  const openQuestionnaire = async () => {
+    if (opening || !sessaoRef.current) return;
+    setOpening(true);
+    setCtaErrorKind(null);
+    try {
+      const { form_url } = await obterFormulario(sessaoRef.current);
+      sessionStorage.setItem(FORM_URL_STORAGE_KEY, form_url);
+      router.push(client ? `/${client.slug}/questionario` : "/questionario");
+    } catch (error) {
+      const kind = error instanceof GateError ? error.kind : "network";
+      if (kind === "invalid-session") {
+        // Contrato: sessão consumida/expirada não tem retry — volta pro passo 1.
+        sessaoRef.current = null;
+        setFormNotice(true);
+        setStep("form");
+      } else {
+        setCtaErrorKind(kind);
+      }
+      setOpening(false);
+    }
+  };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -719,18 +838,50 @@ export function RadarApp({ client }: { client?: ClientBrand } = {}) {
                       key="form"
                       documentValue={documentValue}
                       language={language}
+                      notice={formNotice ? copy[language].sessionExpired : undefined}
                       onDocumentChange={setDocumentValue}
-                      onSubmit={() => setStep("loading")}
+                      onSubmit={() => {
+                        setFormNotice(false);
+                        setStep("loading");
+                      }}
                     />
                   )}
                   {step === "loading" && (
                     <AnalysisScreen key="loading" documentValue={documentValue} language={language} onBack={() => setStep("form")} />
                   )}
                   {step === "found" && (
-                    <ResultScreen key="found" found documentValue={documentValue} language={language} questionnaireHref={questionnaireHref} onRestart={restart} />
+                    <ResultScreen
+                      key="found"
+                      variant="found"
+                      documentValue={documentValue}
+                      language={language}
+                      opening={opening}
+                      ctaError={ctaErrorKind ? (ctaErrorKind === "rate-limit" ? copy[language].errorRateLimit : copy[language].errorNetwork) : undefined}
+                      onOpenQuestionnaire={openQuestionnaire}
+                      onRestart={restart}
+                    />
                   )}
                   {step === "not-found" && (
-                    <ResultScreen key="not-found" found={false} documentValue={documentValue} language={language} questionnaireHref={questionnaireHref} onRestart={restart} />
+                    <ResultScreen
+                      key="not-found"
+                      variant="not-found"
+                      documentValue={documentValue}
+                      language={language}
+                      description={apiMessage ?? undefined}
+                      onOpenQuestionnaire={openQuestionnaire}
+                      onRestart={restart}
+                    />
+                  )}
+                  {step === "error" && (
+                    <ResultScreen
+                      key="error"
+                      variant="error"
+                      documentValue={documentValue}
+                      language={language}
+                      description={errorKind === "rate-limit" ? copy[language].errorRateLimit : copy[language].errorNetwork}
+                      onOpenQuestionnaire={openQuestionnaire}
+                      onRestart={restart}
+                    />
                   )}
                 </AnimatePresence>
               </motion.div>
